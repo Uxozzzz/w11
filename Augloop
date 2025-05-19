@@ -1,0 +1,43 @@
+# Noms des règles
+$rules = @(
+    @{ Name = "Block augloop.office.com"; FQDN = "augloop.office.com" },
+    @{ Name = "Block augloop-prod.trafficmanager.net"; FQDN = "augloop-prod.trafficmanager.net" },
+    @{ Name = "Block augloop-prod-002.francecentral.cloudapp.azure.com"; FQDN = "augloop-prod-002.francecentral.cloudapp.azure.com" },
+    @{ Name = "Block augloop IP 52.111.231.2"; IP = "52.111.231.2" }
+)
+
+# Supprimer les règles existantes
+foreach ($rule in $rules) {
+    if (Get-NetFirewallRule -DisplayName $rule.Name -ErrorAction SilentlyContinue) {
+        Remove-NetFirewallRule -DisplayName $rule.Name
+        Write-Host "♻️ Règle supprimée : $($rule.Name)"
+    }
+}
+
+# Ajouter les règles FQDN
+foreach ($rule in $rules) {
+    if ($rule.FQDN) {
+        New-NetFirewallRule `
+            -DisplayName $rule.Name `
+            -Direction Outbound `
+            -Action Block `
+            -RemoteFQDN $rule.FQDN `
+            -Profile Any `
+            -Protocol Any `
+            -Description "Blocage du domaine $($rule.FQDN)" `
+            | Out-Null
+        Write-Host "✅ Domaine bloqué : $($rule.FQDN)"
+    }
+    elseif ($rule.IP) {
+        New-NetFirewallRule `
+            -DisplayName $rule.Name `
+            -Direction Outbound `
+            -Action Block `
+            -RemoteAddress $rule.IP `
+            -Profile Any `
+            -Protocol Any `
+            -Description "Blocage de l'adresse IP $($rule.IP)" `
+            | Out-Null
+        Write-Host "✅ IP bloquée : $($rule.IP)"
+    }
+}
