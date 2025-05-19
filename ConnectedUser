@@ -1,0 +1,32 @@
+# Emplacement supposé des clés (à ajuster selon l’environnement exact)
+$registryPaths = @(
+    "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer",
+    "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
+)
+
+# Dictionnaire des clés à désactiver
+$registryKeys = @{
+    "SendTelemetry"                     = 0
+    "UserContentDisabled"               = 1
+    "DownloadContentDisabled"           = 1
+    "ControllerConnectedServicesEnabled"= 0
+    "DisconnectedState"                 = 1
+}
+
+foreach ($path in $registryPaths) {
+    foreach ($key in $registryKeys.Keys) {
+        try {
+            # Crée la clé de registre si elle n'existe pas
+            if (-not (Test-Path $path)) {
+                New-Item -Path $path -Force | Out-Null
+            }
+
+            # Applique la valeur
+            Set-ItemProperty -Path $path -Name $key -Value $registryKeys[$key] -Type DWord
+            Write-Host "✅ $key désactivé dans $path"
+        } catch {
+            Write-Warning "⚠️ Erreur lors de la modification de $key dans $path : $_"
+        }
+    }
+}
